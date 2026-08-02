@@ -29,8 +29,12 @@ over a whole storey. That is fine for layout, volumes, routing and a permit set,
 for structural work or made-to-measure joinery. The difference between "a scan" and "a survey"
 is whether you can state that deviation with numbers. This tool produces those numbers.
 
-See [docs/accuracy.md](docs/accuracy.md) for the evidence and [docs/workflow.md](docs/workflow.md)
-for the full process.
+Documentation:
+[workflow.md](docs/workflow.md) for the process end to end,
+[measuring.md](docs/measuring.md) for the measurement protocol,
+[revit.md](docs/revit.md) for building the model,
+[accuracy.md](docs/accuracy.md) for what to expect and why,
+[data-sources.md](docs/data-sources.md) for the endpoints and licences.
 
 ## Install
 

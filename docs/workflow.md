@@ -27,6 +27,8 @@ eaves height to expect, so a gross mistake on the day is obvious immediately.
 
 ## 1. The control network (first, before any scanning)
 
+Full protocol, including technique and a time budget: [measuring.md](measuring.md).
+
 This is the step that separates a survey from a souvenir. Tape a named marker at each end of
 every planned control distance and measure with a laser distance meter:
 
@@ -88,6 +90,8 @@ This is the number that lets you write "as-built to within x" instead of hoping.
 
 ## 5. Into Revit
 
+Summary below; the complete build is in [revit.md](revit.md).
+
 1. `Insert > Point Cloud`, link the `.rcp` (link, do not import).
 2. Set the project base point on a physically identifiable point and fix true north. Write down
    which point you used; every later addition depends on it.
@@ -118,6 +122,7 @@ claims to be as-built should carry its evidence, and this is the cheapest way to
 
 ## What this does not do
 
-- It does not model for you. Scan to BIM remains manual work.
+- It does not model for you. Scan to BIM remains manual work, described in
+  [revit.md](revit.md).
 - It does not replace a laser scanner or a survey firm for structural or made-to-measure work.
 - It does not touch the `.rvt` file. Everything here stops at the point where Revit takes over.
