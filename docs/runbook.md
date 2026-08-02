@@ -38,7 +38,7 @@ scan2bim fetch all
 ```
 
 **Done when:** you have `raw/parcels.geojson`, `raw/footprints.geojson`, both AHN GeoTIFFs,
-`raw/3dbag.city.json`, and the derived DXF and point files. Widen with `--radius 80` if the plot
+`raw/3dbag-features.json`, and the derived DXF and point files. Widen with `--radius 80` if the plot
 is larger than 60 m from the address point.
 
 **Read the 3DBAG table now.** It gives you the expected ridge and eaves height. Take those two
@@ -157,6 +157,12 @@ you convert them into.
 
 ### C2. Register and clean (CloudCompare)
 
+**Decide the Revit route before you touch anything.** Revit links only `.rcp` and `.rcs`, and
+CloudCompare writes neither. If you modify the cloud here, you need ReCap Pro or a plugin to get
+it back into Revit. The one free path is: verify on an `.e57` copy, and if it passes without a
+rescale, link the untouched `.rcp` your app produced. See
+[revit.md](revit.md#do-you-need-recap).
+
 Align the room scans into one cloud with point pair picking, refine with ICP, then crop away
 noise behind glass, mirrors and everything outside the building.
 
@@ -197,12 +203,14 @@ same way.
 
 Full detail in [revit.md](revit.md). The order that avoids rework:
 
-1. **D1.** Units to millimetres, level of detail written into the project information.
+1. **D1.** Units to millimetres, level of detail written into the project information, and
+   the view phase set to Existing before a single element is placed.
 2. **D2.** Shared coordinates: model near the internal origin, then
    `Manage > Coordinates > Specify Coordinates at Point` on a footprint corner from
    `derived/footprints.dxf`. Record which corner, in the project information.
 3. **D3.** Link the context: parcel DXF, footprint DXF, terrain from
-   `derived/ahn_dtm_05m_points.csv`, then the point cloud.
+   `derived/ahn_dtm_05m_points.csv` (Create from CSV, metres), then the point cloud. Move,
+   rotate and **pin** the cloud before modelling.
 4. **D4.** Levels at the **measured** floor-to-floor heights.
 5. **D5.** Wall types with the measured thicknesses, one per building phase.
 6. **D6.** Model walls onto the cloud, out of square where the building is out of square.

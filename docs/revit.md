@@ -16,24 +16,45 @@ where a person makes decisions.
 - **Decide the level of detail now.** As-built LOD 200: volumes, storey heights, room
   dimensions, wall thicknesses, opening positions and sizes, roof shape, stairs. No
   construction details, no mouldings. Write it in the project information so the decision
-  survives the next person.
+  survives the next person. For a listed building, see section 9 first: the details this
+  level excludes are exactly what a monument assessment turns on, so plan a separate set of
+  measured details at 1:5 or 1:20 for the elements under discussion.
+- **Set the phase before you model anything.** New elements take the phase of the *active
+  view*, and stock templates put every view on New Construction. Create your `Bestaand` views
+  with Phase set to Existing and work in those from the start. Discovering this after modelling
+  the whole building means reassigning Phase Created on every element, which is the exact
+  rework this document exists to prevent.
 
 ## 1. Coordinates: one system, once
 
 This is the step that quietly ruins models, so do it deliberately.
 
-Revit gets numerically unstable when geometry sits far from its internal origin. Dutch RD
-coordinates are around 139000, 471000, which is 150 km away. So do **not** move the building to
-RD. Instead:
+Revit gets numerically unstable when geometry sits far from its internal origin. Autodesk's
+limit is **10 miles, about 16 km**, for all geometry, with a 20 mile work plane. Dutch RD
+coordinates put a building in Hilversum roughly **490 km** from the RD false origin, thirty
+times past the limit. So do **not** move the building to RD. Instead:
 
 1. Model the building near the internal origin.
 2. `Manage > Coordinates > Specify Coordinates at Point`, click a known point (a facade corner
    you can identify in the parcel data) and type its RD easting, northing and NAP height.
 3. Set true north via `Manage > Position > Rotate True North`.
 
+Two details decide whether this works:
+
+- **Clip state of the survey point.** If the survey point is clipped when you specify
+  coordinates, Revit *moves* the survey point. Unclipped, it stays put and only its reported
+  values change. Get this wrong and you have dragged your reference hundreds of kilometres.
+- **Visibility.** Once RD is set, the survey point conceptually sits ~490 km away. Turn its
+  visibility off, or the first "zoom to fit" will show you an empty screen and a very small
+  building.
+
 Revit now knows where the building is without moving it there. Everything you link afterwards
 with "Auto - By Shared Coordinates" lands in the right place, and everything you export inherits
 it.
+
+**Everything this tool exports is in a local frame by default**, with the project origin
+subtracted, precisely so that it lands near the internal origin rather than being silently
+re-centred by Revit. Use `--rd` if you want absolute coordinates for GIS work instead.
 
 Write the chosen point and its coordinates into the project information. Every later addition,
 by you or by a modeller you hire, must use the same one.
@@ -45,37 +66,50 @@ Order matters: context first, so the building is placed onto something rather th
 **Parcel boundary.** `Insert > Link CAD`, `derived/parcels.dxf`, units metres, positioning
 `Auto - By Shared Coordinates`, place at the site level. Lock it.
 
-**Terrain.** `Massing & Site > Toposolid > Create from Import > Points File`, choose
-`derived/ahn_dtm_05m_points.csv`, comma delimited, units metres. The z values are metres NAP,
-which is why step 1 included a height. Use `ahn_dsm_05m_points.csv` only if you want vegetation
-and roofs as a sanity check; it is not a terrain surface.
+**Terrain.** `Massing & Site tab > Model Site panel > Toposolid > (Create from Import)`, then
+`(Create from CSV)` on the contextual tab. Choose `derived/ahn_dtm_05m_points.csv` and set the
+units to metres in the Format dialog. Z values are metres NAP, which is why step 1 included a
+height.
 
-**Point cloud.** `Insert > Point Cloud`, link the file (link, never import). Revit links
-`.rcp` and `.rcs` natively, and from Revit 2025 also `.e57` directly.
+Two things Autodesk does quietly here: **anything over 10,000 points is downsampled**, and
+points far from the model are re-centred with the georeferencing thrown away. `fetch terrain`
+handles both, by staying under the limit and exporting in the local frame. Use
+`ahn_dsm_05m_points.csv` only as a sanity check on roofs and vegetation; it is not terrain.
+
+**Point cloud.** `Insert > Point Cloud`, link the file (link, never import). Revit 2024, 2025
+and 2026 all offer exactly two file types in that dialog: `Point Cloud Projects (*.rcp)` and
+`Point Clouds (*.rcs)`. **There is no direct `.e57` import**, whatever secondary sources claim.
+
+After linking, before modelling: move and rotate the cloud so it sits on your levels and faces
+true north, then **pin it**. A phone capture has an arbitrary origin and heading, and a cloud
+that shifts halfway through modelling is worse than no cloud.
 
 If the cloud came out of `scan2bim control check` with a systematic scale error above 0.3
 percent, scale it in CloudCompare before linking. Revit will not fix that for you.
 
 ### Do you need ReCap?
 
-Often not. Check in this order, and settle it before you pay for anything:
+Sometimes, and the honest answer is more awkward than it first looks. Revit reads only `.rcp`
+and `.rcs`. CloudCompare, where the verification and any cleaning or rescaling happen, cannot
+write either format. So the moment you *modify* the cloud, you need something that can produce
+`.rcp` again.
 
-1. **Does your capture app export `.rcp`?** SiteScape does, on its free tier. Then you link
-   it and ReCap never enters the picture. This is the strongest practical argument for
-   choosing SiteScape over the alternatives.
-2. **Are you on Revit 2025 or newer?** Then `.e57` links directly. Verify it yourself in ten
-   seconds: `Insert > Point Cloud` and open the file type dropdown. That dialog is more
-   authoritative than any article, including this one.
-3. **Neither?** Then you need ReCap Pro (subscription, roughly 50 dollars a month or 405 a
-   year, with a 30 day trial) or a third party plugin such as Undet or nCircle. Public
-   sources disagree about what the free ReCap tier still allows, so check your own Autodesk
-   account rather than trusting a blog.
+There is exactly one ReCap-free route, and it is narrow:
 
-ReCap still earns its place when you have many separate scan positions that need registering
-into one coordinate system, when you want noise removal and cropping before modelling, or
-when the cloud is large enough that Revit needs the spatial index to stay responsive. For a
-house captured room by room with an app that already merges its own scans, none of those
-apply.
+1. Capture with an app that exports `.rcp` directly. SiteScape does, on its free tier.
+2. Export the same capture a second time as `.e57` or `.las`, and do the verification on that
+   copy in CloudCompare. Verification only reads coordinates, so this costs nothing.
+3. If the verdict is **pass with no systematic scale error**, link the untouched `.rcp`. The
+   cloud you verified and the cloud you model on are the same data.
+
+If the verdict says rescale, or the capture needs registering or cleaning first, that route
+closes. Then it is ReCap Pro (subscription, roughly 50 dollars a month or 405 a year, with a
+30 day trial) or a third party plugin such as Undet or nCircle. Public sources disagree about
+what the free ReCap tier still allows, so check your own Autodesk account rather than a blog.
+
+Plan for this before the survey, not on the day you open Revit. If the budget cannot stretch to
+ReCap, bias every decision on the survey day towards a cloud that will not need correcting:
+short scans, generous overlap, one capture per storey where the app allows it.
 
 ## 3. Levels
 
@@ -153,24 +187,50 @@ the floor above as a shaft, so it stays correct when the floor changes.
 For a Dutch permit application you deliver *bestaande toestand* and *nieuwe toestand*. Revit
 phasing gives you both from one model, which is the main reason to have a model at all.
 
-1. Everything surveyed goes on phase **Existing**.
+1. Everything surveyed goes on phase **Existing** (set the view phase first, see section 0).
 2. What comes out is marked **Demolished** in the New Construction phase.
 3. New work is created in phase **New Construction**.
-4. Create view templates: `Bestaand` (phase Existing, phase filter showing existing only) and
-   `Nieuw` (phase New Construction, filter showing new plus existing plus demolished).
+4. View templates: `Bestaand` (Phase = Existing, Phase Filter = `Show Complete`) and `Nieuw`
+   (Phase = New Construction, Phase Filter = `Show Previous + Demo`, which is the filter that
+   actually renders demolished elements).
+5. `Manage > Phases > Graphic Overrides` to get the Dutch drawing convention: demolished in
+   one colour, new in another. Without overrides the model cannot produce a sloop/nieuw
+   drawing that reads correctly.
+
+Three traps that cost people a resubmission:
+
+- **Rooms are phase specific.** A room placed in Existing does not exist in New Construction.
+  You place them twice and schedule them per phase, which also means the area comparison in
+  section 10 is per phase.
+- **Schedules have their own Phase and Phase Filter.** A quantity take-off silently reports one
+  phase; check the field before you believe a number.
+- **Toposolids are phased too**, which matters as soon as an extension changes ground level.
+  Levels and grids are not phased, so they are shared across both sets.
 
 Duplicate each plan, section and elevation for both phases. Change a wall once, and both
 drawing sets stay consistent. That consistency is the entire argument for modelling instead of
 drawing.
+
+## 9b. What this model cannot tell you about services
+
+A phone scan sees surfaces. It does not see pipes in floors, cables in walls, or the flue in a
+chimney. For MEP coordination the model gives you accurate voids, floor build-ups, shaft
+positions and ceiling heights, and nothing at all about what is already inside the construction.
+
+So: model the space, not the services. Record visible fixtures and penetrations while you are
+in the building, photograph every opened floor during demolition, and treat existing service
+routes as unknown until they are exposed. Anything else is coordination against guesswork.
 
 ## 10. Rooms and schedules
 
 Place rooms with the names from your survey sketch. Then:
 
 - **Area check.** A room schedule with areas, compared against the NEN 2580 measurement report
-  if the property has one. Revit measures to the wall face by default; the Dutch standard has
-  its own rules, so expect a difference of a few percent and understand it rather than chasing
-  it.
+  if the property has one. Before blaming the standard, check
+  `Architecture > Room & Area > Area and Volume Computations`: the room boundary setting (wall
+  finish, centre, core) changes every area in the schedule. Then expect a residual difference
+  of a few percent, because NEN 2580 has its own counting rules, and understand it rather than
+  chasing it.
 - **Quantities.** Wall area by type, floor area by finish, window and door schedules. Good
   enough to budget with and to compare quotes against.
 - **Not good enough to order with.** Re-measure on site at the moment of ordering and add
@@ -178,13 +238,31 @@ Place rooms with the names from your survey sketch. Then:
 
 ## 11. Views and sheets
 
-The minimum set for a renovation of a listed building:
+Under the Omgevingswet the application goes through the Omgevingsloket, and work on a
+municipal monument needs a **monumentenactiviteit** alongside the building activity. The
+indieningsvereisten are set by the municipality, so read theirs; the set below is what they
+generally ask for.
 
-- Floor plan per storey, existing and proposed, 1:100 (1:50 for detailed areas)
-- Two sections, at least one through the stairwell
-- Four elevations
-- Site plan with the parcel boundary and the terrain
-- A demolition plan if the permit requires it separately
+- **Bestaand and nieuw for every drawing type**: floor plans, sections *and* elevations. Only
+  supplying existing plans plus proposed elevations is the most common reason a set comes back.
+- Floor plan per storey, 1:100, or 1:50 where it matters
+- At least two sections, one through the stairwell
+- All elevations, existing and proposed
+- **Situatietekening** at 1:500 or 1:1000 with north arrow, cadastral boundaries and the
+  **peilmaat relative to NAP or street level**
+- A separate demolition drawing where work is removed
+- **Detail drawings at 1:5 or 1:20** for the monument-critical elements: window profiles,
+  glazing bars, cornices, plasterwork. This is above the LOD 200 the rest of the model sits at,
+  and it is deliberate: these details are what the monument committee actually assesses.
+
+Two things this workflow does not produce and the municipality will still want:
+
+- **Bouwhistorisch onderzoek.** For a monument, and always for partial demolition, expect a
+  cultural-historical or building-historical report following the Richtlijnen bouwhistorisch
+  onderzoek. A point cloud is not a substitute; it is an input.
+- **Bbl compliance evidence**: daylight area per habitable space, ventilation capacity, fire
+  compartmentation, stair dimensions and headroom at renovation level, plus a structural
+  calculation for any extension. The model supports these; it does not answer them.
 
 Put dimension strings on the plans that repeat your control distances. That way anyone reading
 the drawing can check the model against the survey with a scale rule.

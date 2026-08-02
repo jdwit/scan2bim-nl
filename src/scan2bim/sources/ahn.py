@@ -121,19 +121,39 @@ def read_raster(data: bytes, bbox: tuple[float, float, float, float]) -> Raster:
     return Raster(values=values, origin_x=xmin, origin_y=ymax, pixel_size=pixel_size)
 
 
-def write_points_csv(points: np.ndarray, path: Path, *, header: bool = False) -> Path:
-    """Comma separated x,y,z, which is what Revit's toposolid point import expects."""
+def write_points_csv(
+    points: np.ndarray,
+    path: Path,
+    *,
+    header: bool = False,
+    offset: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> Path:
+    """Comma separated x,y,z for Revit's toposolid CSV import.
+
+    `offset` is subtracted from every point. Revit refuses to hold geometry far from its
+    internal origin: hand it raw RD coordinates (hundreds of kilometres out) and it silently
+    re-centres the points on the model, throwing the georeferencing away. Subtracting the
+    project origin keeps the numbers small and the placement predictable.
+    """
+    ox, oy, oz = offset
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         if header:
             handle.write("x,y,z\n")
         for x, y, z in points:
-            handle.write(f"{x:.3f},{y:.3f},{z:.3f}\n")
+            handle.write(f"{x - ox:.3f},{y - oy:.3f},{z - oz:.3f}\n")
     return path
 
 
-def suggested_step(bbox: tuple[float, float, float, float], target_points: int = 20_000) -> int:
-    """Keep point files small enough for Revit to swallow."""
+# Revit down samples any imported points file above this, silently, and the documentation
+# warns that it costs accuracy. Staying under it keeps the terrain you asked for.
+REVIT_POINT_LIMIT = 10_000
+
+
+def suggested_step(
+    bbox: tuple[float, float, float, float], target_points: int = REVIT_POINT_LIMIT
+) -> int:
+    """Keep point files under Revit's import limit."""
     xmin, ymin, xmax, ymax = bbox
     cells = ((xmax - xmin) / 0.5) * ((ymax - ymin) / 0.5)
     if cells <= target_points:

@@ -18,7 +18,7 @@ You now have:
 - `raw/parcels.geojson` and `derived/parcels.dxf`: the plot boundary as surveyed data
 - `raw/ahn_dtm_05m.tif` and `raw/ahn_dsm_05m.tif`: terrain and surface heights
 - `derived/ahn_dtm_05m_points.csv`: an `x,y,z` file for a Revit toposolid
-- `raw/3dbag.city.json` plus a printed table of ridge, eaves and storey counts
+- `raw/3dbag-features.json` plus a printed table of ridge, eaves and storey counts
 - `control/control.yaml` waiting to be filled in
 - `docs/checklist.md`, the survey day checklist
 
@@ -56,7 +56,7 @@ room so the scans overlap in the doorway. Stairwells, basement and attic separat
 Export from the app:
 
 - SiteScape exports `.rcp` directly, which Revit links without conversion, plus `.e57`
-- other apps export `.las` or `.e57`
+- other apps export `.las` or `.e57`, which Revit cannot link at all
 
 Whether you need Autodesk ReCap depends on your Revit version and your export format; see
 [revit.md](revit.md#do-you-need-recap). Often you do not.
@@ -125,8 +125,8 @@ Summary below; the complete build is in [revit.md](revit.md).
 3. Create levels at the **measured** storey heights, not at default values.
 4. Model walls onto the cloud with the measured thicknesses. Where cloud and control
    measurement disagree, the control measurement wins.
-5. Terrain: `Massing & Site > Toposolid > Create from Import > Points File`, using
-   `derived/ahn_dtm_05m_points.csv`, comma delimited, units in metres.
+5. Terrain: `Massing & Site > Toposolid > (Create from Import) > (Create from CSV)`, using
+   `derived/ahn_dtm_05m_points.csv`, units in metres.
 6. Parcel boundary: link `derived/parcels.dxf`.
 7. Cross-check ridge and eaves height against the 3DBAG table.
 

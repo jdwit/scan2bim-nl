@@ -74,21 +74,81 @@ def write_geojson(collection: dict[str, Any], path: Path) -> Path:
     return path
 
 
-def to_dxf(collection: dict[str, Any], path: Path) -> Path:
-    """Minimal DXF R12 with one LWPOLYLINE per ring, in RD metres.
+def to_dxf(
+    collection: dict[str, Any],
+    path: Path,
+    *,
+    layer: str = "PERCEEL",
+    elevation: float = 0.0,
+    offset: tuple[float, float] = (0.0, 0.0),
+) -> Path:
+    """Minimal DXF R12 with one POLYLINE per ring, in metres.
 
-    Deliberately hand-rolled: a full CAD library is a heavy dependency for what is a flat list
-    of coordinates, and R12 polylines import everywhere.
+    Hand-rolled on purpose: a CAD library is a heavy dependency for a flat list of coordinates.
+    But minimal is not the same as sloppy, so this writes the parts a reader needs:
+
+    - a HEADER declaring `$INSUNITS` = metres and `$MEASUREMENT` = metric, so an importer does
+      not have to guess the scale
+    - a TABLES section defining the layer the entities claim to be on
+    - the dummy 10/20/30 point the R12 spec requires on POLYLINE
+    - an explicit `30` elevation on every vertex, since a model referenced to NAP puts a
+      Z=0 parcel line metres below the building
+
+    `offset` is subtracted from every coordinate, matching the terrain export.
     """
-    lines: list[str] = ["0", "SECTION", "2", "ENTITIES"]
+    ox, oy = offset
+    tags: list[tuple[int, object]] = [
+        (0, "SECTION"),
+        (2, "HEADER"),
+        (9, "$ACADVER"),
+        (1, "AC1009"),
+        (9, "$INSUNITS"),
+        (70, 6),  # 6 = metres
+        (9, "$MEASUREMENT"),
+        (70, 1),  # 1 = metric
+        (0, "ENDSEC"),
+        (0, "SECTION"),
+        (2, "TABLES"),
+        (0, "TABLE"),
+        (2, "LAYER"),
+        (70, 1),
+        (0, "LAYER"),
+        (2, layer),
+        (70, 0),
+        (62, 7),
+        (6, "CONTINUOUS"),
+        (0, "ENDTAB"),
+        (0, "ENDSEC"),
+        (0, "SECTION"),
+        (2, "ENTITIES"),
+    ]
     for feature in collection.get("features", []):
-        geometry = feature.get("geometry") or {}
-        for ring in _rings(geometry):
-            lines += ["0", "POLYLINE", "8", "PERCEEL", "66", "1", "70", "1"]
+        for ring in _rings(feature.get("geometry") or {}):
+            tags += [
+                (0, "POLYLINE"),
+                (8, layer),
+                (66, 1),
+                (70, 1),
+                # R12 requires a dummy point on the POLYLINE header itself.
+                (10, 0.0),
+                (20, 0.0),
+                (30, elevation),
+            ]
             for x, y in ring:
-                lines += ["0", "VERTEX", "8", "PERCEEL", "10", f"{x:.3f}", "20", f"{y:.3f}"]
-            lines += ["0", "SEQEND"]
-    lines += ["0", "ENDSEC", "0", "EOF"]
+                tags += [
+                    (0, "VERTEX"),
+                    (8, layer),
+                    (10, x - ox),
+                    (20, y - oy),
+                    (30, elevation),
+                ]
+            tags += [(0, "SEQEND"), (8, layer)]
+    tags += [(0, "ENDSEC"), (0, "EOF")]
+
+    lines = []
+    for code, value in tags:
+        lines.append(str(code))
+        lines.append(f"{value:.3f}" if isinstance(value, float) else str(value))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path

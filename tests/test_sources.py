@@ -132,3 +132,38 @@ def test_ahn_detects_xml_error_disguised_as_success():
     transport = bytes_transport(b"<ExceptionReport/>", content_type="text/xml")
     with client(transport) as c, pytest.raises(SourceError, match="content-type"):
         ahn.fetch("dtm_05m", BBOX, c=c)
+
+
+def test_points_csv_subtracts_the_project_origin(tmp_path):
+    points = np.array([[139657.0, 471121.0, 18.5]])
+    path = ahn.write_points_csv(points, tmp_path / "p.csv", offset=(139657.0, 471121.0, 0.0))
+    # Revit re-centres geometry far from its origin, so the file must already be local.
+    assert path.read_text().strip() == "0.000,0.000,18.500"
+
+
+def test_suggested_step_respects_the_revit_import_limit():
+    assert ahn.REVIT_POINT_LIMIT == 10_000
+    step = ahn.suggested_step((0, 0, 200, 200))
+    cells = (200 / 0.5) ** 2
+    assert cells / step**2 <= ahn.REVIT_POINT_LIMIT
+
+
+def test_dxf_is_readable_and_declares_units_layer_and_elevation(parcel_payload, tmp_path):
+    ezdxf = pytest.importorskip("ezdxf")
+    path = kadaster.to_dxf(
+        parcel_payload,
+        tmp_path / "p.dxf",
+        layer="BEBOUWING",
+        elevation=18.5,
+        offset=(139657.02, 471121.55),
+    )
+    document = ezdxf.readfile(path)
+    assert document.dxfversion == "AC1009"
+    assert "BEBOUWING" in document.layers
+    assert document.header["$INSUNITS"] == 6  # metres
+    assert document.header["$MEASUREMENT"] == 1  # metric
+    entities = list(document.modelspace())
+    assert [e.dxftype() for e in entities] == ["POLYLINE"]
+    first = next(iter(entities[0].points()))
+    assert first[0] == pytest.approx(139640.0 - 139657.02)
+    assert first[2] == pytest.approx(18.5)

@@ -70,12 +70,22 @@ footprints and AHN heights.
 GET https://api.3dbag.nl/collections/pand/items?bbox=<xmin>,<ymin>,<xmax>,<ymax>&limit=25
 ```
 
-The attributes worth reading are `b3_h_maaiveld` (ground level, NAP), `b3_h_nok` (ridge),
-`b3_h_dak_max` and `b3_h_dak_min` (roof extremes, the minimum being the eaves in practice),
+The attributes worth reading are `b3_h_maaiveld` (an AHN-derived ground percentile, not the
+building's peil), `b3_h_nok` (ridge), `b3_h_dak_max` and `b3_h_dak_min` (roof extremes; the
+minimum is the *lowest roof surface*, which on a villa with a lower annex is the annex, not
+the eaves),
 `b3_bouwlagen` (storeys) and `b3_dak_type`. Building parts repeat their parent's identifier
 with a suffix and carry no attributes, so they are skipped.
 
 Licence: CC BY 4.0, so credit 3DBAG if you publish derived drawings.
+
+The response is an **OGC API Features collection with embedded CityJSON objects**, whose
+vertices are quantised integers decoded through a `transform` nested under `metadata`. It is not
+a standalone CityJSON document, no viewer will open it as one, and Revit has no CityJSON import
+at all. Treat it as an attribute source; the geometry is there for a CityJSON-aware pipeline.
+
+Because these heights are derived from aerial LiDAR and a generalised ground level, compare them
+with your own survey to within a metre, not to within a decimetre.
 
 Used by: `scan2bim fetch building`. Gives you an independent height check on your own survey,
 and the neighbours' roofs for daylight and shadow questions.

@@ -36,6 +36,7 @@ scan2bim = "scan2bim.cli:app"
 
 [dependency-groups]
 dev = [
+  "ezdxf>=1.4.4",
   "mypy>=1.13",
   "pytest>=8.3",
   "pytest-cov>=6.0",

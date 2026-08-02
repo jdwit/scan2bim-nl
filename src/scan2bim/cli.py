@@ -65,7 +65,8 @@ def project_init(
         str | None, typer.Option("--address", "-a", help="Dutch address to resolve immediately")
     ] = None,
     directory: Annotated[
-        Path | None, typer.Option("--directory", "-d", help="Where to create the project")
+        Path | None,
+        typer.Option("--directory", "-d", help="Project folder itself, instead of ./<name>"),
     ] = None,
 ) -> None:
     """Create a project folder with the standard layout, a control template and a checklist."""
@@ -176,8 +177,14 @@ def address_resolve(
 def fetch_parcel(
     radius: Annotated[float | None, typer.Option("--radius", help="Half-width in metres")] = None,
     dxf: Annotated[bool, typer.Option("--dxf/--no-dxf", help="Also write a DXF")] = True,
+    elevation: Annotated[
+        float, typer.Option("--elevation", help="Z for the DXF, in metres NAP")
+    ] = 0.0,
+    absolute: Annotated[
+        bool, typer.Option("--rd/--local", help="Absolute RD coordinates instead of local")
+    ] = False,
 ) -> None:
-    """Cadastral parcels around the project, as GeoJSON and DXF in RD coordinates."""
+    """Cadastral parcels around the project, as GeoJSON and a DXF in the local frame."""
     root, project = _load_project()
     bbox = _bbox(project, radius)
     with client() as http:
@@ -188,7 +195,13 @@ def fetch_parcel(
     raw = kadaster.write_geojson(collection, root / "raw" / "parcels.geojson")
     console.print(f"[green]saved[/green] {raw.relative_to(root)}")
     if dxf:
-        out = kadaster.to_dxf(collection, root / "derived" / "parcels.dxf")
+        out = kadaster.to_dxf(
+            collection,
+            root / "derived" / "parcels.dxf",
+            layer="PERCEEL",
+            elevation=elevation,
+            offset=_origin(project, absolute),
+        )
         console.print(f"[green]saved[/green] {out.relative_to(root)}")
 
     rows = kadaster.summarise(collection)
@@ -208,6 +221,12 @@ def fetch_parcel(
 def fetch_footprint(
     radius: Annotated[float | None, typer.Option("--radius", help="Half-width in metres")] = None,
     dxf: Annotated[bool, typer.Option("--dxf/--no-dxf", help="Also write a DXF")] = True,
+    elevation: Annotated[
+        float, typer.Option("--elevation", help="Z for the DXF, in metres NAP")
+    ] = 0.0,
+    absolute: Annotated[
+        bool, typer.Option("--rd/--local", help="Absolute RD coordinates instead of local")
+    ] = False,
 ) -> None:
     """Cadastral building footprints: what you align the model to when setting RD coordinates."""
     root, project = _load_project()
@@ -220,7 +239,13 @@ def fetch_footprint(
     raw = kadaster.write_geojson(collection, root / "raw" / "footprints.geojson")
     console.print(f"[green]saved[/green] {raw.relative_to(root)}")
     if dxf:
-        out = kadaster.to_dxf(collection, root / "derived" / "footprints.dxf")
+        out = kadaster.to_dxf(
+            collection,
+            root / "derived" / "footprints.dxf",
+            layer="BEBOUWING",
+            elevation=elevation,
+            offset=_origin(project, absolute),
+        )
         console.print(f"[green]saved[/green] {out.relative_to(root)}")
     console.print(
         f"[dim]{len(collection.get('features', []))} footprint(s). Pick a corner you can also "
@@ -235,8 +260,12 @@ def fetch_terrain(
     ] = "dtm_05m",
     radius: Annotated[float | None, typer.Option("--radius", help="Half-width in metres")] = None,
     step: Annotated[
-        int | None, typer.Option("--step", help="Sample every Nth pixel; default keeps ~20k points")
+        int | None,
+        typer.Option("--step", help="Sample every Nth pixel; default stays under Revit's limit"),
     ] = None,
+    absolute: Annotated[
+        bool, typer.Option("--rd/--local", help="Absolute RD coordinates instead of local")
+    ] = False,
 ) -> None:
     """AHN height data for the plot: a GeoTIFF plus an x,y,z point file for a Revit toposolid."""
     root, project = _load_project()
@@ -255,7 +284,10 @@ def fetch_terrain(
     raster = ahn.read_raster(payload, bbox)
     chosen_step = step if step is not None else ahn.suggested_step(bbox)
     points = raster.to_xyz(step=chosen_step)
-    csv_path = ahn.write_points_csv(points, root / "derived" / f"ahn_{coverage}_points.csv")
+    ox, oy = _origin(project, absolute)
+    csv_path = ahn.write_points_csv(
+        points, root / "derived" / f"ahn_{coverage}_points.csv", offset=(ox, oy, 0.0)
+    )
     console.print(f"[green]saved[/green] {csv_path.relative_to(root)}  ({len(points)} points)")
 
     stats = raster.stats()
@@ -265,10 +297,13 @@ def fetch_terrain(
     table.add_row("min height", f"{stats['min_m']:.2f} m NAP")
     table.add_row("max height", f"{stats['max_m']:.2f} m NAP")
     table.add_row("relief", f"{stats['relief_m']:.2f} m")
+    frame = "absolute RD" if absolute else f"local, origin at RD {ox:.2f}, {oy:.2f}"
+    table.add_row("frame", frame)
     console.print(table)
     console.print(
-        "[dim]Revit: Massing & Site > Toposolid > Create from Import > Points File, "
-        "comma delimited, units in metres.[/dim]"
+        "[dim]Revit: Massing & Site > Toposolid > Create from Import > Create from CSV, "
+        "comma delimited, units in metres. Revit downsamples above "
+        f"{ahn.REVIT_POINT_LIMIT:,} points.[/dim]"
     )
 
 
@@ -285,8 +320,13 @@ def fetch_building(
             payload = bag3d.fetch(bbox, c=http, limit=limit)
         except SourceError as exc:
             _fail(str(exc))
-    path = bag3d.write_cityjson(payload, root / "raw" / "3dbag.city.json")
+    path = bag3d.write_features(payload, root / "raw" / "3dbag-features.json")
     console.print(f"[green]saved[/green] {path.relative_to(root)}")
+    if bag3d.truncated(payload, limit):
+        console.print(
+            f"[yellow]warning[/yellow] more buildings exist than the limit of {limit}; "
+            "raise --limit or narrow --radius"
+        )
 
     buildings = bag3d.parse(payload)
     if not buildings:
@@ -534,6 +574,19 @@ def doctor() -> None:
                 console.print(f"[green]ok  [/green] {name}")
     if failures:
         raise typer.Exit(code=1)
+
+
+def _origin(project: config.Project, absolute: bool) -> tuple[float, float]:
+    """The offset subtracted from exported coordinates.
+
+    Revit re-centres imported geometry that sits far from its internal origin, and RD
+    coordinates are hundreds of kilometres out. Exporting in a local frame keeps every file in
+    the same place, predictably. `--rd` opts back into absolute coordinates for GIS use.
+    """
+    if absolute or not project.has_location:
+        return (0.0, 0.0)
+    assert project.rd_x is not None and project.rd_y is not None
+    return (project.rd_x, project.rd_y)
 
 
 def _bbox(project: config.Project, radius: float | None) -> tuple[float, float, float, float]:

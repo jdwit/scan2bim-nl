@@ -1,5 +1,10 @@
 """3DBAG (TU Delft): LoD2.2 building models for every building in the Netherlands.
 
+Note on the response: this is an OGC API Features collection whose features embed CityJSON
+objects with quantised integer vertices, not a standalone CityJSON document. The saved file is
+therefore useful for its attributes and for feeding a CityJSON-aware pipeline that applies the
+transform, and is not something you can hand to a viewer expecting plain CityJSON.
+
 Useful as an independent check on the geometry you measure yourself: ridge height, eaves
 height, ground level and number of storeys, derived from national aerial LiDAR rather than
 from your own scan. Also gives you the neighbours, which matters for daylight and shadow
@@ -85,7 +90,13 @@ def parse(payload: dict[str, Any]) -> list[Building]:
     return buildings
 
 
-def write_cityjson(payload: dict[str, Any], path: Path) -> Path:
+def truncated(payload: dict[str, Any], limit: int) -> bool:
+    """True when the service has more buildings than were returned."""
+    matched = payload.get("numberMatched")
+    return isinstance(matched, int) and matched > limit
+
+
+def write_features(payload: dict[str, Any], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
