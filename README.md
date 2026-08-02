@@ -30,6 +30,7 @@ for structural work or made-to-measure joinery. The difference between "a scan" 
 is whether you can state that deviation with numbers. This tool produces those numbers.
 
 Documentation:
+**[runbook.md](docs/runbook.md) is the step by step plan**, start there.
 [workflow.md](docs/workflow.md) for the process end to end,
 [measuring.md](docs/measuring.md) for the measurement protocol,
 [revit.md](docs/revit.md) for building the model,
@@ -50,7 +51,8 @@ git clone https://github.com/jdwit/scan2bim-nl && cd scan2bim-nl && make setup
 scan2bim doctor                                   # are all open data services reachable?
 scan2bim project init myhouse -a "Oranjelaan 5 Hilversum"
 cd myhouse
-scan2bim fetch all                                # parcel, terrain, surface, 3D buildings
+scan2bim fetch all                                # parcel, footprints, terrain, 3D buildings
+scan2bim markers sheet                            # print these before the survey day
 # ... survey day: fill in control/control.yaml, scan the building ...
 scan2bim control validate
 scan2bim control check picked.csv --units m       # picked in CloudCompare
@@ -64,6 +66,8 @@ scan2bim report --picked picked.csv
 | `project init` | folder layout, control template, survey checklist | Getting the field work right first time |
 | `address search/resolve` | RD coordinates (EPSG:28992), BAG id | Anchoring the project in the national grid |
 | `fetch parcel` | parcel GeoJSON and DXF | Plot boundary as surveyed data, not traced from a scan |
+| `fetch footprint` | building footprints GeoJSON and DXF | The corner you anchor RD shared coordinates on |
+| `markers sheet` | printable A4 markers | Named points you can find back in the cloud |
 | `fetch terrain` | AHN GeoTIFF and `x,y,z` point file | Revit toposolid, garden levels, eaves and ridge check |
 | `fetch building` | 3DBAG heights and CityJSON | Independent check on ridge, eaves, storeys, and the neighbours |
 | `control validate` | findings table | Catches missing diagonals, unit slips, impossible heights |

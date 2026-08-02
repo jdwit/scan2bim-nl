@@ -60,6 +60,14 @@ class ControlDistance(BaseModel):
     length_mm: float
     storey: str | None = None
     description: str | None = None
+    scan: str | None = Field(
+        default=None,
+        description=(
+            "Which capture both markers appear in. Distances whose markers sit in separate, "
+            "unregistered scans cannot be compared."
+        ),
+    )
+    photo: str | None = Field(default=None, description="Photo of the measurement, in raw/photos/")
 
 
 class ControlFile(BaseModel):

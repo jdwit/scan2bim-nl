@@ -37,6 +37,7 @@ class Comparison:
     distance_id: str
     measured_mm: float
     cloud_mm: float
+    scan: str | None = None
 
     @property
     def deviation_mm(self) -> float:
@@ -59,6 +60,13 @@ class Verification:
         numerator = sum(c.cloud_mm * c.measured_mm for c in self.comparisons)
         denominator = sum(c.cloud_mm**2 for c in self.comparisons)
         return numerator / denominator if denominator else math.nan
+
+    def by_scan(self) -> dict[str, list[Comparison]]:
+        """Comparisons grouped by the capture their markers came from."""
+        grouped: dict[str, list[Comparison]] = {}
+        for comparison in self.comparisons:
+            grouped.setdefault(comparison.scan or "unlabelled", []).append(comparison)
+        return grouped
 
     @property
     def max_abs_deviation_pct(self) -> float:
@@ -103,7 +111,12 @@ class Verification:
 
 
 def read_markers(path: Path, *, units: str = "m") -> dict[str, Marker]:
-    """Read `name,x,y,z` rows. A header line is optional and detected automatically."""
+    """Read `name,x,y,z` rows. A header line is optional and detected automatically.
+
+    All coordinates must come from one registered cloud. Picking marker A in one room scan and
+    marker B in another, with the two never aligned, produces a distance between two unrelated
+    coordinate systems: a number that looks fine and means nothing.
+    """
     factor = {"m": 1000.0, "mm": 1.0, "cm": 10.0}.get(units)
     if factor is None:
         raise ValueError(f"Unknown units {units!r}, expected m, cm or mm")
@@ -142,6 +155,7 @@ def compare(
                 distance_id=distance.id,
                 measured_mm=distance.length_mm,
                 cloud_mm=start.distance_mm(end),
+                scan=distance.scan,
             )
         )
     return Verification(

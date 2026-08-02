@@ -4,6 +4,7 @@ import pytest
 from typer.testing import CliRunner
 
 from scan2bim import config
+from scan2bim import control as control_mod
 from scan2bim.cli import app
 
 runner = CliRunner()
@@ -78,3 +79,36 @@ def test_cli_report_without_control(tmp_path, monkeypatch):
     content = (root / "reports" / "provenance.md").read_text()
     assert "unverified" in content
     assert "No raw files yet" in content
+
+
+def test_marker_names_come_from_the_control_file(control_yaml):
+    from scan2bim import markers as markers_mod
+
+    control = control_mod.load(control_yaml)
+    assert markers_mod.names_from_control(control) == ["A", "B", "C", "D"]
+
+
+def test_marker_sheet_renders_one_page_per_marker():
+    from scan2bim import markers as markers_mod
+
+    html = markers_mod.render("house", ["A", "B"])
+    assert html.count('class="sheet"') == 2
+    assert ">A<" in html and ">B<" in html
+
+
+def test_marker_sheet_needs_names():
+    from scan2bim import markers as markers_mod
+
+    with pytest.raises(ValueError, match="No marker names"):
+        markers_mod.render("house", [])
+
+
+def test_cli_markers_sheet_uses_control_file(tmp_path, monkeypatch, control_yaml):
+    root = tmp_path / "h"
+    runner.invoke(app, ["project", "init", "house", "--directory", str(root)])
+    (root / "control" / "control.yaml").write_text(control_yaml.read_text(), encoding="utf-8")
+    monkeypatch.chdir(root)
+    result = runner.invoke(app, ["markers", "sheet"])
+    assert result.exit_code == 0, result.output
+    html = (root / "derived" / "markers.html").read_text()
+    assert html.count('class="sheet"') == 4

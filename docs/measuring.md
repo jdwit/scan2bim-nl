@@ -131,6 +131,19 @@ Number of risers, total rise, going, width, and the stairwell opening in the flo
 Number of risers times individual rise must equal the floor-to-floor height; that is a free
 check on step 5.
 
+### 8b. Vertical control (20 minutes)
+
+The connection between storeys is the weakest part of any phone capture: the scanner is carried
+up a stairwell it can barely see, and drift accumulates exactly where you cannot check it. So
+measure the vertical link by hand and do not let the cloud decide it.
+
+- Floor-to-floor per storey, measured directly in the stairwell opening or through a hatch.
+- Risers times rise must equal floor-to-floor. Two independent numbers that have to agree.
+- If a stairwell is open over more than one storey, take one long vertical shot from the lowest
+  floor to the highest ceiling and record it as a control distance in its own right.
+
+In Revit the storeys are stacked on these numbers, not on the cloud.
+
 ### 9. Photographs (30 minutes)
 
 Per room: four corners, ceiling, floor, and each opening straight on. Plus every marker, every
@@ -177,6 +190,9 @@ writing their own.
   left to check it against.
 - **No diagonals.** The model comes out square, the building is not, and the error surfaces
   when something is manufactured to fit.
+- **Markers that only one scan can see.** Both ends of a control distance must appear in the
+  same capture, or in scans you will register into one cloud. Otherwise the verification
+  compares two unrelated coordinate systems and reports a number that means nothing.
 - **Measuring from the floor instead of a datum.** Every reading inherits the local floor slope
   and the errors compound differently in each room.
 - **One height per storey.** You will not know whether the ceiling drops 40 mm across the

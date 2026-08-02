@@ -13,6 +13,7 @@ from rich.table import Table
 
 from scan2bim import config
 from scan2bim import control as control_mod
+from scan2bim import markers as markers_mod
 from scan2bim import report as report_mod
 from scan2bim import verify as verify_mod
 from scan2bim.http import SourceError, client
@@ -27,10 +28,12 @@ project_app = typer.Typer(help="Create and inspect a survey project.", no_args_i
 address_app = typer.Typer(help="Look up addresses and coordinates.", no_args_is_help=True)
 fetch_app = typer.Typer(help="Pull open data for the project location.", no_args_is_help=True)
 control_app = typer.Typer(help="Validate and verify control measurements.", no_args_is_help=True)
+markers_app = typer.Typer(help="Printable markers for the survey.", no_args_is_help=True)
 app.add_typer(project_app, name="project")
 app.add_typer(address_app, name="address")
 app.add_typer(fetch_app, name="fetch")
 app.add_typer(control_app, name="control")
+app.add_typer(markers_app, name="markers")
 
 console = Console()
 err = Console(stderr=True)
@@ -201,6 +204,30 @@ def fetch_parcel(
         console.print(table)
 
 
+@fetch_app.command("footprint")
+def fetch_footprint(
+    radius: Annotated[float | None, typer.Option("--radius", help="Half-width in metres")] = None,
+    dxf: Annotated[bool, typer.Option("--dxf/--no-dxf", help="Also write a DXF")] = True,
+) -> None:
+    """Cadastral building footprints: what you align the model to when setting RD coordinates."""
+    root, project = _load_project()
+    bbox = _bbox(project, radius)
+    with client() as http:
+        try:
+            collection = kadaster.buildings(bbox, c=http)
+        except SourceError as exc:
+            _fail(str(exc))
+    raw = kadaster.write_geojson(collection, root / "raw" / "footprints.geojson")
+    console.print(f"[green]saved[/green] {raw.relative_to(root)}")
+    if dxf:
+        out = kadaster.to_dxf(collection, root / "derived" / "footprints.dxf")
+        console.print(f"[green]saved[/green] {out.relative_to(root)}")
+    console.print(
+        f"[dim]{len(collection.get('features', []))} footprint(s). Pick a corner you can also "
+        "identify in the point cloud; that is your shared coordinates point.[/dim]"
+    )
+
+
 @fetch_app.command("terrain")
 def fetch_terrain(
     coverage: Annotated[
@@ -287,11 +314,41 @@ def fetch_building(
 def fetch_all(
     radius: Annotated[float | None, typer.Option("--radius", help="Half-width in metres")] = None,
 ) -> None:
-    """Parcel, terrain, surface and buildings in one go."""
+    """Parcel, footprints, terrain, surface and buildings in one go."""
     fetch_parcel(radius=radius, dxf=True)
+    fetch_footprint(radius=radius, dxf=True)
     fetch_terrain(coverage="dtm_05m", radius=radius, step=None)
     fetch_terrain(coverage="dsm_05m", radius=radius, step=None)
     fetch_building(radius=radius, limit=25)
+
+
+@markers_app.command("sheet")
+def markers_sheet(
+    names: Annotated[
+        list[str] | None,
+        typer.Argument(help="Marker names; defaults to those used in the control file"),
+    ] = None,
+    out: Annotated[Path | None, typer.Option("--out", "-o", help="Output path")] = None,
+) -> None:
+    """Printable A4 markers, one per page, to tape at the ends of every control distance."""
+    root, project = _load_project()
+    chosen = list(names or [])
+    if not chosen:
+        control_path = root / CONTROL_FILE
+        if not control_path.exists():
+            _fail(f"{control_path} not found, so no marker names to print. Pass them explicitly.")
+        try:
+            chosen = markers_mod.names_from_control(control_mod.load(control_path))
+        except ValueError as exc:
+            _fail(str(exc))
+    try:
+        content = markers_mod.render(project.name, chosen)
+    except ValueError as exc:
+        _fail(str(exc))
+    path = markers_mod.write(content, out or root / "derived" / "markers.html")
+    console.print(f"[green]written[/green] {path.relative_to(root)}  ({len(chosen)} markers)")
+    console.print(f"[dim]{', '.join(chosen)}[/dim]")
+    console.print("[dim]Open it in a browser and print at 100 percent, no scaling.[/dim]")
 
 
 @control_app.command("validate")
@@ -397,6 +454,16 @@ def control_check(
             console.print(table)
             console.print(f"scale factor      : {result.scale_factor:.5f}")
             console.print(f"rms deviation     : {result.rms_deviation_mm:.1f} mm")
+            grouped = result.by_scan()
+            if len(grouped) > 1:
+                console.print("per capture       :")
+                for label, group in sorted(grouped.items()):
+                    worst_pct = max(abs(c.deviation_pct) for c in group)
+                    console.print(f"  {label}: {len(group)} distance(s), worst {worst_pct:+.2f}%")
+                console.print(
+                    "[dim]All picked coordinates must come from one registered cloud; "
+                    "distances across unaligned scans are meaningless.[/dim]"
+                )
         console.print(f"verdict           : [bold]{'pass' if result.passed else 'fail'}[/bold]")
         console.print(result.advice)
     if not result.passed:

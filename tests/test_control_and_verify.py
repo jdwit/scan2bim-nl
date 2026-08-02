@@ -156,3 +156,14 @@ def test_unquoted_yaml_date_is_accepted(tmp_path):
     path = tmp_path / "control.yaml"
     path.write_text("project: x\nsurveyed_on: 2026-11-03\n", encoding="utf-8")
     assert control_mod.load(path).surveyed_on == "2026-11-03"
+
+
+def test_comparisons_group_by_capture(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    control.control_distances[0].scan = "ground-front"
+    control.control_distances[1].scan = "ground-rear"
+    path = _picked(tmp_path, "A,0,0,0\nB,12.0,0,0\nC,0,8.0,0\nD,15.0,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    grouped = result.by_scan()
+    assert set(grouped) == {"ground-front", "ground-rear", "unlabelled"}
+    assert len(grouped["unlabelled"]) == 2

@@ -49,6 +49,10 @@ control_distances:
     to_marker: B
     length_mm: 0
     storey: ground
+    # Which capture both markers appear in. Both ends must be in the same scan, or in scans you
+    # register into one cloud, otherwise the verification compares unrelated coordinate systems.
+    scan: ground-front
+    photo: null
     description: front facade inside, west corner to east corner
   - id: cd-ground-2
     from_marker: A
