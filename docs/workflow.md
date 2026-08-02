@@ -56,7 +56,10 @@ room so the scans overlap in the doorway. Stairwells, basement and attic separat
 Export from the app:
 
 - SiteScape exports `.rcp` directly, which Revit links without conversion, plus `.e57`
-- other apps export `.las` or `.e57`, which Autodesk ReCap indexes into `.rcp`
+- other apps export `.las` or `.e57`
+
+Whether you need Autodesk ReCap depends on your Revit version and your export format; see
+[revit.md](revit.md#do-you-need-recap). Often you do not.
 
 Copy everything into `raw/scans/` the same evening, and keep the raw exports. A raw cloud can be
 reprocessed in five years with better software; a finished model cannot.

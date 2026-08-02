@@ -50,12 +50,32 @@ Order matters: context first, so the building is placed onto something rather th
 which is why step 1 included a height. Use `ahn_dsm_05m_points.csv` only if you want vegetation
 and roofs as a sanity check; it is not a terrain surface.
 
-**Point cloud.** `Insert > Point Cloud`, link the `.rcp` (link, never import). If your capture
-app produced `.e57` or `.las`, index it in Autodesk ReCap first; ReCap writes the `.rcp` plus
-its `.rcs` scans.
+**Point cloud.** `Insert > Point Cloud`, link the file (link, never import). Revit links
+`.rcp` and `.rcs` natively, and from Revit 2025 also `.e57` directly.
 
 If the cloud came out of `scan2bim control check` with a systematic scale error above 0.3
 percent, scale it in CloudCompare before linking. Revit will not fix that for you.
+
+### Do you need ReCap?
+
+Often not. Check in this order, and settle it before you pay for anything:
+
+1. **Does your capture app export `.rcp`?** SiteScape does, on its free tier. Then you link
+   it and ReCap never enters the picture. This is the strongest practical argument for
+   choosing SiteScape over the alternatives.
+2. **Are you on Revit 2025 or newer?** Then `.e57` links directly. Verify it yourself in ten
+   seconds: `Insert > Point Cloud` and open the file type dropdown. That dialog is more
+   authoritative than any article, including this one.
+3. **Neither?** Then you need ReCap Pro (subscription, roughly 50 dollars a month or 405 a
+   year, with a 30 day trial) or a third party plugin such as Undet or nCircle. Public
+   sources disagree about what the free ReCap tier still allows, so check your own Autodesk
+   account rather than trusting a blog.
+
+ReCap still earns its place when you have many separate scan positions that need registering
+into one coordinate system, when you want noise removal and cropping before modelling, or
+when the cloud is large enough that Revit needs the spatial index to stay responsive. For a
+house captured room by room with an app that already merges its own scans, none of those
+apply.
 
 ## 3. Levels
 
