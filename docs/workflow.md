@@ -91,6 +91,30 @@ scale factor over all of them and a verdict against your tolerance (1 percent by
 
 This is the number that lets you write "as-built to within x" instead of hoping.
 
+### What CloudCompare is for
+
+It is free, open source, and it does the jobs no capture app and no ReCap subscription will
+do for you:
+
+- **Picking marker coordinates.** The point picking tool gives you the `name,x,y,z` file that
+  `scan2bim control check` consumes. This is the only strictly required step, and the reason
+  CloudCompare is in the chain at all.
+- **Scaling.** If verification finds a systematic error, `Edit > Multiply/Scale` fixes it in
+  one operation. Nothing downstream can.
+- **Registering separate scans.** Align by point pairs, then refine with ICP. The align tool
+  can solve for scale as well, which you need for photogrammetry because it has no inherent
+  scale.
+- **Cleaning.** Segment away the noise behind glass, the reflections in mirrors, people who
+  walked through the shot, and everything outside the building.
+- **Comparing two clouds.** Cloud-to-cloud distance produces a colour coded deviation map:
+  your phone scan against a photogrammetry mesh, or a before and after state. Nothing else
+  makes an accuracy claim as legible.
+- **Subsampling and converting.** Between `.e57`, `.las`, `.ply` and friends. It will not
+  write `.rcp`, which is Autodesk's proprietary format.
+
+The interface is academic rather than friendly. Learn the four tools above and ignore the
+rest; it is the free equivalent of features that cost thousands elsewhere.
+
 ## 5. Into Revit
 
 Summary below; the complete build is in [revit.md](revit.md).
