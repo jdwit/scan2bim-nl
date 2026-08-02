@@ -1,0 +1,58 @@
+# Control measurements, taken by hand on site with a laser distance meter.
+#
+# These values outrank the point cloud. Everything is in millimetres.
+# Photograph every measurement point and name the markers on tape on the floor or wall, so
+# the same points can be picked back in the cloud afterwards.
+
+project: CHANGE-ME
+surveyed_on: null # YYYY-MM-DD
+instrument: null # e.g. "Leica Disto D2"
+
+# At least three per storey. Ceilings in old buildings are not flat, and floor-to-floor is
+# what Revit levels are built on.
+storey_heights:
+  - storey: ground
+    location: hall, north wall
+    floor_to_ceiling_mm: 0
+    floor_to_floor_mm: 0
+  - storey: ground
+    location: living, south-east corner
+    floor_to_ceiling_mm: 0
+  - storey: ground
+    location: kitchen, centre
+    floor_to_ceiling_mm: 0
+
+# Both diagonals per room. Without them you cannot tell whether the corners are square.
+rooms:
+  - id: living
+    storey: ground
+    width_mm: 0
+    length_mm: 0
+    diagonal_a_mm: 0
+    diagonal_b_mm: 0
+
+# Measure exterior walls in a window reveal, per facade: building phases differ in thickness.
+walls:
+  - id: facade-south
+    kind: exterior
+    thickness_mm: 0
+    measured_at: window reveal, ground floor
+  - id: partition-hall
+    kind: interior
+    thickness_mm: 0
+
+# Four to six long shots per storey, including diagonals across the whole floor plan. These
+# are what `scan2bim control check` uses to scale and verify the cloud.
+control_distances:
+  - id: cd-ground-1
+    from_marker: A
+    to_marker: B
+    length_mm: 0
+    storey: ground
+    description: front facade inside, west corner to east corner
+  - id: cd-ground-2
+    from_marker: A
+    to_marker: C
+    length_mm: 0
+    storey: ground
+    description: diagonal, front west corner to rear east corner

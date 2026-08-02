@@ -1,0 +1,68 @@
+[project]
+name = "scan2bim-nl"
+version = "0.1.0"
+description = "Turn an iPhone LiDAR scan of a Dutch building into a verified, measurable basis for Revit, using free national open data"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Jelmer de Wit" }]
+keywords = ["lidar", "scan-to-bim", "revit", "pdok", "ahn", "3dbag", "point-cloud"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+  "httpx>=0.28",
+  "numpy>=1.26",
+  "pillow>=10.3",
+  "pydantic>=2.9",
+  "pyyaml>=6.0",
+  "rich>=13.7",
+  "tomli-w>=1.0",
+  "typer>=0.15",
+]
+
+[project.urls]
+Homepage = "https://github.com/jdwit/scan2bim-nl"
+Issues = "https://github.com/jdwit/scan2bim-nl/issues"
+
+[project.scripts]
+scan2bim = "scan2bim.cli:app"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.13",
+  "pytest>=8.3",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+  "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scan2bim"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["scan2bim"]
+strict = false
+warn_unused_ignores = true
