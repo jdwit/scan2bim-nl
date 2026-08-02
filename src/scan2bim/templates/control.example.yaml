@@ -60,3 +60,8 @@ control_distances:
     length_mm: 0
     storey: ground
     description: diagonal, front west corner to rear east corner
+
+# Markers taped on the storey datum line (the metre line). Their true heights are equal, so
+# whatever height spread the cloud reports for them is its tilt. Distances between points are
+# invariant under rotation and can never reveal this, which is why it is measured separately.
+metre_line_markers: [A, B, C]

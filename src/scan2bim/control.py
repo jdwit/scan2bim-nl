@@ -78,6 +78,13 @@ class ControlFile(BaseModel):
     rooms: list[Room] = Field(default_factory=list)
     walls: list[Wall] = Field(default_factory=list)
     control_distances: list[ControlDistance] = Field(default_factory=list)
+    metre_line_markers: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Markers taped on the storey datum line. Their true heights are equal, so the "
+            "spread the cloud reports for them is its levelling error."
+        ),
+    )
 
     @field_validator("surveyed_on", mode="before")
     @classmethod

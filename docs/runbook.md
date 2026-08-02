@@ -63,10 +63,19 @@ scan2bim markers sheet
 **Done when:** `derived/markers.html` opens in a browser and shows one page per marker. Print at
 100 percent, no scaling. The red circle marks the exact point you measure from and pick later.
 
-### A6. Pack
+### A6. Confirm the power, and bring lights anyway
+
+Ask the notaris or the seller whether the electricity supply is live on transfer day. On an
+empty house it often is not, and phone scanning needs light: the tracking that stitches the
+depth frames together is camera-based, so an unlit room degrades it to orientation only. Bring
+two battery work lights and a power station regardless. Basement and attic get no daylight in
+November either way.
+
+### A7. Pack
 
 Laser distance meter, tape measure, cross line laser, printed markers, masking tape, marker pen,
-the printed `docs/checklist.md`, clipboard, phone with free storage, power bank, target card.
+the printed `docs/checklist.md`, clipboard, phone with 200 GB free, power bank, target card,
+lights, and a laptop plus an external drive for the lunchtime offload.
 
 ---
 
@@ -85,23 +94,29 @@ the photos. Note where building phases change, where floors slope, what you cann
 At each planned endpoint, about 1.2 m high, on flat wall, red circle over the exact point.
 Photograph each one with the room in shot. Leave them up until scanning is finished.
 
-### B3. Set the metre line (15 min per storey)
+### B3. Insurance scan pass (45 min)
+
+As soon as the markers are up, walk the whole building once and scan it quickly, room by room,
+without fussing. This is the copy you fall back on if the day runs out or a later capture is
+bad. It costs 45 minutes and removes the worst failure mode of the whole plan.
+
+### B4. Set the metre line (15 min per storey)
 
 Cross line laser, horizontal, 1000 mm above the finished floor at the storey entrance. Mark it in
 every room. Every vertical measurement from now on references this line, not the local floor.
 
-### B4. Control distances (45-60 min per storey)
+### B5. Control distances (45-60 min per storey)
 
 Measure each planned shot twice; a third time if the two readings differ by more than 3 mm.
 Fill in `length_mm` and the `photo` field.
 
-### B5. Rooms, heights, walls, openings, stairs (3 hours)
+### B6. Rooms, heights, walls, openings, stairs (3 hours)
 
 Per room: width, length and **both** diagonals. Per storey: heights at three or more places,
 from the metre line. Wall thicknesses in window reveals, per facade and per building phase.
 One measurement per opening type. Stair risers, rise, going, stairwell opening.
 
-### B6. Vertical control (20 min)
+### B7. Vertical control (20 min)
 
 The weak point of every phone scan is the connection between storeys, because the scanner is
 carried up a stairwell it cannot see well. Do not rely on it:
@@ -113,7 +128,7 @@ carried up a stairwell it cannot see well. Do not rely on it:
 
 Storeys are stacked on these numbers in Revit. They will not come out of the cloud.
 
-### B7. Validate before you leave (5 min)
+### B8. Validate before you leave (5 min)
 
 ```bash
 scan2bim control validate
@@ -122,10 +137,16 @@ scan2bim control validate
 **Done when:** no `fail` findings. Warnings are for you to judge; failures are impossible
 values and mean a transcription error, which is a five minute fix now and a re-visit later.
 
-### B8. Scan (2 hours)
+### B9. Scan properly (2 hours)
 
 One scan per room, two to four minutes each, at 1.2 to 1.5 m, 1.5 to 3 m from surfaces, closing
 a loop. Overlap through doorways. Stairwell, basement and attic separately.
+
+**Stop and hold at each room corner** for a few seconds rather than walking continuously.
+Published comparisons put static capture around six times better than walking capture on the
+same device in the same room. It is the single cheapest quality gain in the whole protocol.
+
+Offload to the laptop after each storey, not at the end of the day.
 
 Record in `control/control.yaml` which capture each control distance sits in, using the `scan`
 field. That is what lets the verification tell you *where* a problem is.
@@ -134,14 +155,14 @@ field. That is what lets the verification tell you *where* a problem is.
 you will register into one cloud. Two markers picked in two never-aligned scans produce a
 distance between unrelated coordinate systems: a plausible number that means nothing.
 
-### B9. Facades (30 min)
+### B10. Facades and interior photogrammetry (1 hour)
 
 Photo series around the building, 60 to 80 percent overlap, three heights, overcast light. Put a
 known length in shot. Tape two markers on one facade at a measured distance apart, and record
 that as a control distance too; it is how you verify the photogrammetry, which otherwise has no
 scale at all.
 
-### B10. Before you drive away
+### B11. Before you drive away
 
 Walk the checklist. Every control distance written down and photographed, every room scanned,
 attic and basement covered, markers still in place in the last scan.
@@ -236,10 +257,17 @@ the `.rvt`, the `.ifc`, the PDF plots and the raw scans.
 
 ## Time budget
 
+Be honest about this. The task list alone sums to roughly nine hours, which leaves nothing for
+travel, the key handover, setup, lunch, battery swaps, or the things you discover. A first
+control network takes about double the estimate on the first storey. **Plan two days, or accept
+a triage order in advance so what gets cut comes off the bottom rather than at random.** In
+early November you have about nine hours of daylight and considerably less usable daylight
+inside a villa.
+
 | Phase | Effort |
 | --- | --- |
 | A. Preparation | 1 to 2 hours, at your desk |
-| B. Survey day | 8 to 9 hours for ~200 m2 with two people |
+| B. Survey day | 12 to 16 hours for ~200 m2 with two people, so plan two days |
 | C. Processing | half a day |
 | D. Modelling | days to weeks, depending on the building and who does it |
 | E. Report | minutes |

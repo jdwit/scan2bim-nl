@@ -24,10 +24,13 @@ open data.
 
 ## Why
 
-Consumer LiDAR is accurate to roughly 2 cm up to 3 m, 3 to 5 cm between 3 and 4 m, and drifts
-over a whole storey. That is fine for layout, volumes, routing and a permit set, and not fine
-for structural work or made-to-measure joinery. The difference between "a scan" and "a survey"
-is whether you can state that deviation with numbers. This tool produces those numbers.
+Consumer LiDAR reaches about 5 m, and at room and building scale published studies put the
+error at 3 to 20 cm over 10 to 15 m spans, worse when you walk rather than stop and hold. That
+is fine for layout, volumes, routing and a 1:100 permit set, and not fine for structural work
+or made-to-measure joinery. The difference between "a scan" and "a survey" is whether you can
+put a number on the deviation and say what that number does and does not cover. This tool
+produces those numbers, with their uncertainty, and is explicit about the error modes a
+distance check cannot see.
 
 Documentation:
 **[runbook.md](docs/runbook.md) is the step by step plan**, start there.

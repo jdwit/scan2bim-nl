@@ -251,15 +251,26 @@ generally ask for.
 - **Situatietekening** at 1:500 or 1:1000 with north arrow, cadastral boundaries and the
   **peilmaat relative to NAP or street level**
 - A separate demolition drawing where work is removed
-- **Detail drawings at 1:5 or 1:20** for the monument-critical elements: window profiles,
-  glazing bars, cornices, plasterwork. This is above the LOD 200 the rest of the model sits at,
-  and it is deliberate: these details are what the monument committee actually assesses.
+- For a monument, elevations are wanted at **1:20 or 1:50** rather than 1:100 where the change
+  is substantial, with **details at 1:1, 1:2 or 1:5** including materials and dimensions.
+- Plans and sections must record the **fabric**: joist layout dotted in plan and dimensioned in
+  section, ornamented ceilings, timber sizes and the roof structure, for both the existing and
+  the proposed state.
+
+That fabric record is not something a phone scan produces. It is measured by hand and drawn,
+and it is what the monument committee actually reads. Budget for it separately, and note that
+it is above the LOD 200 the rest of the model sits at, deliberately.
 
 Two things this workflow does not produce and the municipality will still want:
 
-- **Bouwhistorisch onderzoek.** For a monument, and always for partial demolition, expect a
-  cultural-historical or building-historical report following the Richtlijnen bouwhistorisch
-  onderzoek. A point cloud is not a substitute; it is an input.
+- **Bouwhistorisch onderzoek.** The municipality can require a building-historical report, and
+  routinely does for a monument and for partial demolition. Once required it is binding, and an
+  application without it can be set aside as incomplete. Commission it *before* anything is
+  stripped: it is the one deliverable on this list that cannot be reconstructed afterwards, and
+  the one you cannot produce yourself. A point cloud is an input to it, not a substitute.
+- **Check the demolition permit position early.** In a protected townscape, demolition of any
+  structure is generally permit-bound and the usual permit-free exemptions fall away. That is a
+  question to settle before the survey day, not after.
 - **Bbl compliance evidence**: daylight area per habitable space, ventilation capacity, fire
   compartmentation, stair dimensions and headroom at renovation level, plus a structural
   calculation for any extension. The model supports these; it does not answer them.

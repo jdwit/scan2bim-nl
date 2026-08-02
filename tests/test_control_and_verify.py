@@ -122,7 +122,7 @@ def test_compare_fails_when_cloud_is_stretched(control_yaml, tmp_path):
     result = verify_mod.compare(control, markers)
     assert not result.passed
     assert result.max_abs_deviation_pct == pytest.approx(5.0, abs=0.2)
-    assert "exceeds" in result.advice
+    assert "Outside tolerance" in result.advice
 
 
 def test_systematic_scale_error_is_advised(control_yaml, tmp_path):
@@ -167,3 +167,63 @@ def test_comparisons_group_by_capture(control_yaml, tmp_path):
     grouped = result.by_scan()
     assert set(grouped) == {"ground-front", "ground-rear", "unlabelled"}
     assert len(grouped["unlabelled"]) == 2
+
+
+def test_allowance_has_a_fixed_and_a_proportional_part(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    result = verify_mod.compare(control, {}, tolerance_pct=0.5, tolerance_mm=25.0)
+    # A percentage-only tolerance is punishing on short lines and slack on long ones.
+    assert result.allowance_mm(2_000) == pytest.approx(35.0)
+    assert result.allowance_mm(12_000) == pytest.approx(85.0)
+
+
+def test_scale_error_inside_its_own_noise_is_not_advised(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    # Random-looking picking noise, no real scale error: the estimator must not cry wolf.
+    path = _picked(tmp_path, "A,0,0,0\nB,12.03,0,0\nC,0,7.975,0\nD,14.98,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    assert result.passed
+    assert not result.scale_is_significant
+    assert "do not rescale" in result.advice
+
+
+def test_consistent_scale_error_is_still_flagged(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    path = _picked(tmp_path, "A,0,0,0\nB,12.06,0,0\nC,0,8.04,0\nD,15.075,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    assert result.scale_is_significant
+    assert "Scaling is worth doing" in result.advice
+
+
+def test_residual_rms_separates_scale_from_the_rest(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    path = _picked(tmp_path, "A,0,0,0\nB,12.06,0,0\nC,0,8.04,0\nD,15.075,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    # A pure scale error is fully absorbed by scaling; the raw figure is not.
+    assert result.rms_deviation_mm > 40
+    assert result.residual_rms_mm < 1
+
+
+def test_duplicate_marker_names_are_rejected(tmp_path):
+    path = _picked(tmp_path, "A,0,0,0\nA,1,0,0\n")
+    with pytest.raises(ValueError, match="appears twice"):
+        verify_mod.read_markers(path)
+
+
+def test_datum_line_markers_reveal_tilt(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    control.metre_line_markers = ["A", "B", "C"]
+    # All three were taped on one horizontal line, so this spread is the cloud's tilt.
+    path = _picked(tmp_path, "A,0,0,0\nB,12.0,0,0.105\nC,0,8.0,0.04\nD,15.0,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    assert result.level_spread_mm == pytest.approx(105.0)
+    # Distances alone say the cloud is fine, which is exactly the blind spot.
+    assert result.passed
+
+
+def test_level_spread_needs_two_markers(control_yaml, tmp_path):
+    control = control_mod.load(control_yaml)
+    control.metre_line_markers = ["A"]
+    path = _picked(tmp_path, "A,0,0,0\nB,12.0,0,0\nC,0,8.0,0\nD,15.0,0,0\n")
+    result = verify_mod.compare(control, verify_mod.read_markers(path, units="m"))
+    assert result.level_spread_mm is None

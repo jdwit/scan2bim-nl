@@ -437,8 +437,11 @@ def control_check(
         str, typer.Option("--units", help="Units of the picked file: m, cm or mm")
     ] = "m",
     tolerance: Annotated[
-        float, typer.Option("--tolerance", help="Maximum accepted deviation in percent")
+        float, typer.Option("--tolerance", help="Proportional part of the allowance, in percent")
     ] = verify_mod.DEFAULT_TOLERANCE_PCT,
+    tolerance_mm: Annotated[
+        float, typer.Option("--tolerance-mm", help="Fixed part of the allowance, in millimetres")
+    ] = verify_mod.DEFAULT_TOLERANCE_MM,
     json_out: Annotated[bool, typer.Option("--json", help="Machine readable output")] = False,
 ) -> None:
     """Compare cloud distances against the measured control distances."""
@@ -451,7 +454,9 @@ def control_check(
         markers = verify_mod.read_markers(picked, units=units)
     except ValueError as exc:
         _fail(str(exc))
-    result = verify_mod.compare(control, markers, tolerance_pct=tolerance)
+    result = verify_mod.compare(
+        control, markers, tolerance_pct=tolerance, tolerance_mm=tolerance_mm
+    )
 
     if json_out:
         console.print_json(
@@ -459,8 +464,12 @@ def control_check(
                 {
                     "passed": result.passed,
                     "scale_factor": result.scale_factor,
+                    "scale_standard_error": result.scale_standard_error,
+                    "scale_is_significant": result.scale_is_significant,
                     "max_abs_deviation_pct": result.max_abs_deviation_pct,
                     "rms_deviation_mm": result.rms_deviation_mm,
+                    "residual_rms_mm": result.residual_rms_mm,
+                    "level_spread_mm": result.level_spread_mm,
                     "missing_markers": sorted(set(result.missing_markers)),
                     "comparisons": [
                         {
@@ -479,21 +488,39 @@ def control_check(
     else:
         if result.comparisons:
             table = Table(
-                "distance", "measured (mm)", "cloud (mm)", "deviation (mm)", "deviation (%)"
+                "distance",
+                "measured (mm)",
+                "cloud (mm)",
+                "deviation (mm)",
+                "allowed (mm)",
             )
             for comparison in result.comparisons:
-                over = abs(comparison.deviation_pct) > tolerance
-                colour = "red" if over else "green"
+                colour = "green" if result.within_tolerance(comparison) else "red"
                 table.add_row(
                     comparison.distance_id,
                     f"{comparison.measured_mm:.0f}",
                     f"{comparison.cloud_mm:.0f}",
                     f"[{colour}]{comparison.deviation_mm:+.0f}[/{colour}]",
-                    f"[{colour}]{comparison.deviation_pct:+.2f}[/{colour}]",
+                    f"{result.allowance_mm(comparison.measured_mm):.0f}",
                 )
             console.print(table)
-            console.print(f"scale factor      : {result.scale_factor:.5f}")
-            console.print(f"rms deviation     : {result.rms_deviation_mm:.1f} mm")
+            console.print(
+                f"scale factor      : {result.scale_factor:.4f} "
+                f"+/- {result.scale_standard_error * 100:.2f}%  "
+                f"({len(result.comparisons)} distances)"
+            )
+            console.print(f"raw rms deviation : {result.rms_deviation_mm:.1f} mm")
+            console.print(f"after scaling     : {result.residual_rms_mm:.1f} mm")
+            if result.level_spread_mm is not None:
+                colour = (
+                    "green"
+                    if result.level_spread_mm <= verify_mod.LEVEL_SPREAD_NOTE_MM
+                    else "yellow"
+                )
+                console.print(
+                    f"datum line spread : [{colour}]{result.level_spread_mm:.0f} mm[/{colour}]"
+                    "  (tilt relative to gravity; distances cannot see this)"
+                )
             grouped = result.by_scan()
             if len(grouped) > 1:
                 console.print("per capture       :")

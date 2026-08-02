@@ -93,26 +93,37 @@ def build(
         lines.append("Not run. Without it, no accuracy claim can be made about this model.")
     else:
         lines += [
-            f"- Tolerance: {verification.tolerance_pct:.2f}%",
-            f"- Scale factor: {verification.scale_factor:.5f}",
-            f"- Largest deviation: {verification.max_abs_deviation_pct:.2f}%",
-            f"- RMS deviation: {verification.rms_deviation_mm:.1f} mm",
+            f"- Allowance: {verification.tolerance_mm:.0f} mm + "
+            f"{verification.tolerance_pct:.2f}% of the measured length",
+            f"- Control distances: {len(verification.comparisons)}",
+            f"- Scale factor: {verification.scale_factor:.4f} "
+            f"+/- {verification.scale_standard_error * 100:.2f}% (1 sigma)",
+            f"- RMS deviation, raw: {verification.rms_deviation_mm:.1f} mm",
+            f"- RMS deviation, after scaling: {verification.residual_rms_mm:.1f} mm",
+            (
+                f"- Datum line height spread: {verification.level_spread_mm:.0f} mm"
+                if verification.level_spread_mm is not None
+                else "- Datum line height spread: not measured, so cloud tilt is unknown"
+            ),
             f"- Verdict: **{'pass' if verification.passed else 'fail'}**",
             "",
             verification.advice,
             "",
+            "These figures describe the control lines only. Distances between points cannot "
+            "reveal rotation, tilt or local warping, so they are a lower bound on the error "
+            "elsewhere in the cloud, not a guarantee about it.",
+            "",
         ]
         if verification.comparisons:
             lines += [
-                "| Control distance | Measured (mm) | Cloud (mm) | Deviation (mm) | "
-                "Deviation (%) |",
+                "| Control distance | Measured (mm) | Cloud (mm) | Deviation (mm) | Allowed (mm) |",
                 "| --- | ---: | ---: | ---: | ---: |",
             ]
             for comparison in verification.comparisons:
                 lines.append(
                     f"| {comparison.distance_id} | {comparison.measured_mm:.0f} | "
                     f"{comparison.cloud_mm:.0f} | {comparison.deviation_mm:+.0f} | "
-                    f"{comparison.deviation_pct:+.2f} |"
+                    f"{verification.allowance_mm(comparison.measured_mm):.0f} |"
                 )
 
     lines += [

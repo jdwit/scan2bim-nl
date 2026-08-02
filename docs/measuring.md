@@ -18,9 +18,17 @@ without a location is a rumour.
 | Marker pen and clipboard | Numbers go on paper first. Phones die, paper does not |
 | Phone with free storage, power bank | Scanning eats gigabytes and battery |
 | Target card (white A5 on stiff board) | Laser shots over 10 m onto a dark or absent surface |
+| Two battery work lights and a power station | See below. This is not optional |
 
 A laser distance meter costs around 100 euro and is the single highest-value purchase in this
 entire workflow.
+
+**Assume there is no electricity.** On a transfer day the supply is often disconnected, and
+this breaks more than the lighting. Phone scanning is visual-inertial: the LiDAR returns depth
+in the dark, but the camera-based tracking that stitches those depths into one cloud does not.
+Apple's own guidance is that an unlit room degrades world tracking to orientation only. A
+November basement or attic gets no daylight either way. Confirm the supply beforehand and bring
+lights regardless.
 
 ## The two rules
 
@@ -55,7 +63,12 @@ two different wall thicknesses), where floors slope, where you cannot reach.
 Tape a marker at each end of every control distance you plan to take. Name them per storey:
 `A`, `B`, `C` on the ground floor, `A1`, `B1` on the first, and so on.
 
-- Put them at a consistent height, around 1.2 m, on a flat piece of wall.
+- Put roughly half of them **exactly on the metre line** you set in the next step, and list
+  those in `metre_line_markers` in the control file. Their true heights are then equal by
+  construction, so the height spread the cloud reports for them is its tilt. Distances between
+  points can never reveal tilt, so without this the check has a permanent blind spot.
+- Put the others deliberately high and low. A network where every marker sits at 1.2 m is flat,
+  and a flat network says nothing about vertical error.
 - Choose points that will still exist after the scan: not on furniture, not on a door leaf.
 - Corners are good anchors, but tape the marker slightly off the corner so both the laser and
   the scanner can actually see it.
@@ -78,6 +91,17 @@ Technique:
 
 Write these into `control_distances` in the control file, in millimetres, with the marker names
 and a description that lets someone else repeat the shot.
+
+**Take face-to-face shots as well, and treat them as the primary check.** Lay the laser flat
+against one wall and shoot to the opposite face, through open doors where possible: front
+facade inner face to rear facade inner face, per storey, in two directions. These are
+repeatable to a few millimetres and need no markers at all. In processing you fit planes to
+those two wall patches rather than picking points, which averages the noise over tens of
+thousands of points instead of inheriting it from one click.
+
+**If you have seven markers, measure all 21 distances between them, not five selected ones.**
+Twenty extra minutes turns a list of numbers into a network you can adjust and get real
+residuals from. Redundancy is what separates a survey from a set of measurements.
 
 ### 4. Rooms (10 minutes per room)
 
@@ -144,7 +168,38 @@ measure the vertical link by hand and do not let the cloud decide it.
 
 In Revit the storeys are stacked on these numbers, not on the cloud.
 
+### 8c. The outside, the services and the structure (45 minutes)
+
+None of this comes out of an interior scan, and most of it is destroyed by demolition.
+
+- **Overall external dimensions**, all four sides plus corner-to-corner diagonals. The phone
+  cannot do this and it is the dimension a permit drawing leans on hardest. Check it against
+  `derived/footprints.dxf`.
+- **Drainage**: manhole positions, invert depths, pipe directions. Where the existing drainage
+  runs decides where new bathrooms can go, and it disappears under a new floor.
+- **Service entries**: meter cupboard, gas, water, electricity, and any redundant connections.
+- **Structure**: joist direction, spacing and section wherever a hatch, a damaged ceiling or a
+  lifted board allows; lintels; chimney breasts. "If visible" is too weak if there is any
+  extension planned.
+- **Asbestos suspicions**, photographed and located, not touched. It is a legal matter before
+  demolition, not a modelling one.
+
+### 8d. Vertical alignment between storeys (15 minutes)
+
+Floor-to-floor heights stack the storeys vertically. Nothing so far fixes their **plan**
+alignment, and two storeys rotated a couple of degrees relative to each other is an expensive
+and classic error: chimneys, stacks and load-bearing walls stop lining up.
+
+Drop a plumb line or a vertical laser through the stair void, mark the same XY point on every
+floor, and measure from that mark to two markers per storey.
+
 ### 9. Photographs (30 minutes)
+
+**Shoot a full photogrammetry set of the interior too**, 70 to 80 percent overlap per room, 30
+to 45 minutes for a house. It is the cheapest insurance there is: if the LiDAR turns out to have
+drifted or the app corrupts a project, photographs can still be processed into a metric mesh.
+The building will not be there for a second attempt.
+
 
 Per room: four corners, ceiling, floor, and each opening straight on. Plus every marker, every
 measurement point, and anything odd: cracks, damp stains, previous alterations, service runs.
@@ -187,7 +242,13 @@ writing their own.
 ## Mistakes that cost the most
 
 - **Scanning first, measuring second.** The scan then dictates the model, and there is nothing
-  left to check it against.
+  left to check it against. The real rule is narrower than it sounds though: what must happen
+  before scanning is *taping the markers*. Once they are up, take a quick full-building
+  insurance pass, then do the control network, then the careful room scans. Running out of
+  daylight with a complete control sheet and half a building scanned is the worse outcome.
+- **Assuming the power is on.** Without light the tracking degrades and the scan drifts or
+  fails, and colour-based marker picking dies with it.
+- **A network that is flat in Z.** Every marker at the same height cannot reveal tilt.
 - **No diagonals.** The model comes out square, the building is not, and the error surfaces
   when something is manufactured to fit.
 - **Markers that only one scan can see.** Both ends of a control distance must appear in the
