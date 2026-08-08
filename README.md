@@ -24,13 +24,21 @@ open data.
 
 ## Why
 
-Consumer LiDAR is accurate to roughly 2 cm up to 3 m, 3 to 5 cm between 3 and 4 m, and drifts
-over a whole storey. That is fine for layout, volumes, routing and a permit set, and not fine
-for structural work or made-to-measure joinery. The difference between "a scan" and "a survey"
-is whether you can state that deviation with numbers. This tool produces those numbers.
+Consumer LiDAR reaches about 5 m, and at room and building scale published studies put the
+error at 3 to 20 cm over 10 to 15 m spans, worse when you walk rather than stop and hold. That
+is fine for layout, volumes, routing and a 1:100 permit set, and not fine for structural work
+or made-to-measure joinery. The difference between "a scan" and "a survey" is whether you can
+put a number on the deviation and say what that number does and does not cover. This tool
+produces those numbers, with their uncertainty, and is explicit about the error modes a
+distance check cannot see.
 
-See [docs/accuracy.md](docs/accuracy.md) for the evidence and [docs/workflow.md](docs/workflow.md)
-for the full process.
+Documentation:
+**[runbook.md](docs/runbook.md) is the step by step plan**, start there.
+[workflow.md](docs/workflow.md) for the process end to end,
+[measuring.md](docs/measuring.md) for the measurement protocol,
+[revit.md](docs/revit.md) for building the model,
+[accuracy.md](docs/accuracy.md) for what to expect and why,
+[data-sources.md](docs/data-sources.md) for the endpoints and licences.
 
 ## Install
 
@@ -46,7 +54,8 @@ git clone https://github.com/jdwit/scan2bim-nl && cd scan2bim-nl && make setup
 scan2bim doctor                                   # are all open data services reachable?
 scan2bim project init myhouse -a "Oranjelaan 5 Hilversum"
 cd myhouse
-scan2bim fetch all                                # parcel, terrain, surface, 3D buildings
+scan2bim fetch all                                # parcel, footprints, terrain, 3D buildings
+scan2bim markers sheet                            # print these before the survey day
 # ... survey day: fill in control/control.yaml, scan the building ...
 scan2bim control validate
 scan2bim control check picked.csv --units m       # picked in CloudCompare
@@ -60,6 +69,8 @@ scan2bim report --picked picked.csv
 | `project init` | folder layout, control template, survey checklist | Getting the field work right first time |
 | `address search/resolve` | RD coordinates (EPSG:28992), BAG id | Anchoring the project in the national grid |
 | `fetch parcel` | parcel GeoJSON and DXF | Plot boundary as surveyed data, not traced from a scan |
+| `fetch footprint` | building footprints GeoJSON and DXF | The corner you anchor RD shared coordinates on |
+| `markers sheet` | printable A4 markers | Named points you can find back in the cloud |
 | `fetch terrain` | AHN GeoTIFF and `x,y,z` point file | Revit toposolid, garden levels, eaves and ridge check |
 | `fetch building` | 3DBAG heights and CityJSON | Independent check on ridge, eaves, storeys, and the neighbours |
 | `control validate` | findings table | Catches missing diagonals, unit slips, impossible heights |
